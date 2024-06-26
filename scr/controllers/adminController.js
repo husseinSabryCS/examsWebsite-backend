@@ -1,6 +1,6 @@
 const db = require('../models/db');
 const { v4: uuidv4 } = require('uuid');
-
+const ExcelJS = require('exceljs');
 exports.addExam = (req, res) => {
   const { title, description, questions } = req.body;
   const examId = uuidv4();
@@ -107,6 +107,82 @@ exports.deleteExam = (req, res) => {
           res.status(200).send('Exam deleted successfully.');
         });
       });
+    });
+  });
+};
+
+
+// دالة للحصول على اسم الطالب ودرجته لامتحان معين وتنزيل ملف Excel
+exports.getExamResults = (req, res) => {
+  const { examId } = req.params;
+  const userId = req.user.id; // الحصول على معرف المستخدم من التوكن
+
+  if (!examId) {
+    return res.status(400).send('Exam ID is required.');
+  }
+
+  // التحقق من أن المستخدم الحالي هو منشئ الامتحان
+  const sqlCheckCreator = 'SELECT creator_id FROM exams WHERE id = ?';
+  db.query(sqlCheckCreator, [examId], (err, examResult) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    if (examResult.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    if (examResult[0].creator_id !== userId) {
+      return res.status(403).send('You are not authorized to access this exam.');
+    }
+
+    // جلب نتائج الامتحان
+    const sqlGetResults = `
+      SELECT s.student_id, u.email as student_email, SUM(sa.is_correct) as total_correct
+      FROM student_answers sa
+      JOIN users u ON sa.student_id = u.id
+      JOIN exams e ON sa.exam_id = e.id
+      WHERE sa.exam_id = ?
+      GROUP BY sa.student_id, u.email;
+    `;
+
+    db.query(sqlGetResults, [examId], (err, results) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      if (results.length === 0) {
+        return res.status(404).send('No results found for this exam.');
+      }
+
+      // إنشاء ملف Excel
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Exam Results');
+
+      // إضافة العناوين
+      worksheet.columns = [
+        { header: 'Student ID', key: 'student_id', width: 25 },
+        { header: 'Student Email', key: 'student_email', width: 25 },
+        { header: 'Total Correct Answers', key: 'total_correct', width: 20 }
+      ];
+
+      // إضافة البيانات
+      results.forEach(result => {
+        worksheet.addRow(result);
+      });
+
+      // إعداد الرد لتنزيل الملف
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=exam_results.xlsx');
+
+      // إرسال الملف
+      workbook.xlsx.write(res)
+        .then(() => {
+          res.end();
+        })
+        .catch((error) => {
+          res.status(500).send(error);
+        });
     });
   });
 };
