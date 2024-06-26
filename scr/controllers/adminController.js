@@ -63,3 +63,50 @@ exports.getExamsCreatedByUser = (req, res) => {
     res.status(200).json(results);
   });
 };
+
+exports.deleteExam = (req, res) => {
+  const { examId } = req.params;
+  if (!examId) {
+    return res.status(400).send('Exam ID is required.');
+  }
+
+  // تحقق مما إذا كان المستخدم هو من أنشأ الامتحان
+  const sqlCheckCreator = 'SELECT creator_id FROM exams WHERE id = ?';
+  db.query(sqlCheckCreator, [examId], (err, result) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    if (result.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    if (result[0].creator_id !== req.user.id) {
+      return res.status(403).send('You are not authorized to delete this exam.');
+    }
+
+    // حذف الإجابات، الأسئلة، وأخيراً الامتحان
+    const sqlDeleteAnswers = 'DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE exam_id = ?)';
+    db.query(sqlDeleteAnswers, [examId], (err) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      const sqlDeleteQuestions = 'DELETE FROM questions WHERE exam_id = ?';
+      db.query(sqlDeleteQuestions, [examId], (err) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+
+        const sqlDeleteExam = 'DELETE FROM exams WHERE id = ?';
+        db.query(sqlDeleteExam, [examId], (err) => {
+          if (err) {
+            return res.status(500).send(err);
+          }
+
+          res.status(200).send('Exam deleted successfully.');
+        });
+      });
+    });
+  });
+};
