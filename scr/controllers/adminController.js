@@ -183,3 +183,71 @@ exports.getExamResults = (req, res) => {
     });
   });
 };
+exports.closeExam = (req, res) => {
+  const { examId } = req.body;
+  const userId = req.user.id; // الحصول على معرف المستخدم من التوكن
+
+  if (!examId) {
+    return res.status(400).send('Exam ID is required.');
+  }
+
+  // التحقق من أن المستخدم الحالي هو منشئ الامتحان
+  const sqlCheckCreator = 'SELECT creator_id FROM exams WHERE id = ?';
+  db.query(sqlCheckCreator, [examId], (err, examResult) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    if (examResult.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    if (examResult[0].creator_id !== userId) {
+      return res.status(403).send('You are not authorized to close this exam.');
+    }
+
+    // إغلاق الامتحان
+    const sqlCloseExam = 'UPDATE exams SET is_open = 0 WHERE id = ?';
+    db.query(sqlCloseExam, [examId], (err, result) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      res.status(200).send('Exam closed successfully.');
+    });
+  });
+};
+exports.openExam = (req, res) => {
+  const { examId } = req.body;
+  const userId = req.user.id; // الحصول على معرف المستخدم من التوكن
+
+  if (!examId) {
+    return res.status(400).send('Exam ID is required.');
+  }
+
+  // التحقق من أن المستخدم الحالي هو منشئ الامتحان
+  const sqlCheckCreator = 'SELECT creator_id FROM exams WHERE id = ?';
+  db.query(sqlCheckCreator, [examId], (err, examResult) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    if (examResult.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    if (examResult[0].creator_id !== userId) {
+      return res.status(403).send('You are not authorized to open this exam.');
+    }
+
+    
+    const sqlCloseExam = 'UPDATE exams SET is_open = 1 WHERE id = ?';
+    db.query(sqlCloseExam, [examId], (err, result) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      res.status(200).send('Exam opened successfully.');
+    });
+  });
+};
