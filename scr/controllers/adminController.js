@@ -111,8 +111,6 @@ exports.deleteExam = (req, res) => {
   });
 };
 
-
-// دالة للحصول على اسم الطالب ودرجته لامتحان معين وتنزيل ملف Excel
 exports.getExamResults = (req, res) => {
   const { examId } = req.params;
   const userId = req.user.id; // الحصول على معرف المستخدم من التوكن
@@ -138,12 +136,12 @@ exports.getExamResults = (req, res) => {
 
     // جلب نتائج الامتحان
     const sqlGetResults = `
-      SELECT s.student_id, u.email as student_email, SUM(sa.is_correct) as total_correct
+      SELECT sa.student_id, COUNT(sa.id) AS correct_answers
       FROM student_answers sa
-      JOIN users u ON sa.student_id = u.id
-      JOIN exams e ON sa.exam_id = e.id
+      JOIN answers a ON sa.answer_id = a.id
       WHERE sa.exam_id = ?
-      GROUP BY sa.student_id, u.email;
+        AND sa.is_correct = 1
+      GROUP BY sa.student_id;
     `;
 
     db.query(sqlGetResults, [examId], (err, results) => {
@@ -162,8 +160,7 @@ exports.getExamResults = (req, res) => {
       // إضافة العناوين
       worksheet.columns = [
         { header: 'Student ID', key: 'student_id', width: 25 },
-        { header: 'Student Email', key: 'student_email', width: 25 },
-        { header: 'Total Correct Answers', key: 'total_correct', width: 20 }
+        { header: 'Total Correct Answers', key: 'correct_answers', width: 20 }
       ];
 
       // إضافة البيانات
