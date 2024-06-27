@@ -8,6 +8,7 @@ router.get('/getSudentsGrad',Token.verifyToken, adminController.getStudentCorrec
 router.get('/getExamsCreatedByUser/:userId',Token.verifyToken, adminController.getExamsCreatedByUser);
 router.delete('/exams/:examId', Token.verifyToken, adminController.deleteExam);
 router.put('/exams/close', Token.verifyToken, adminController.closeExam);
+router.put('/exams/close/schedule', Token.verifyToken, adminController.scheduleExamClosure);
 router.put('/exams/open', Token.verifyToken, adminController.openExam);
 router.get('/exams/:examId/results', Token.verifyToken, adminController.getExamResults);
 module.exports = router;

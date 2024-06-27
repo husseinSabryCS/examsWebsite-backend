@@ -1,6 +1,8 @@
 const db = require('../models/db');
 const { v4: uuidv4 } = require('uuid');
 const ExcelJS = require('exceljs');
+const cron = require('node-cron');
+////////////////////////////////
 exports.addExam = (req, res) => {
   const { title, description, questions } = req.body;
   const examId = uuidv4();
@@ -15,7 +17,7 @@ exports.addExam = (req, res) => {
       const questionId = uuidv4();
       const sqlQuestion = 'INSERT INTO questions (id, exam_id, question_text) VALUES (?, ?, ?)';
       db.query(sqlQuestion, [questionId, examId, question.question_text], (err, result) => {
-        if (err) {
+        if (err) {   
           return res.status(500).send(err);
         }
         question.answers.forEach(answer => {
@@ -249,5 +251,56 @@ exports.openExam = (req, res) => {
 
       res.status(200).send('Exam opened successfully.');
     });
+  });
+};
+
+
+
+
+
+
+exports.scheduleExamClosure = (req, res) => {
+  const { examId, minutes } = req.body;
+  const userId = req.user.id; // استخراج معرف المستخدم من التوكن
+
+  if (!examId || !minutes || isNaN(minutes)) {
+    return res.status(400).send('Exam ID and minutes are required and must be a number.');
+  }
+
+  // التحقق من أن المستخدم الحالي هو منشئ الامتحان
+  const sqlCheckCreator = 'SELECT creator_id FROM exams WHERE id = ?';
+  db.query(sqlCheckCreator, [examId], (err, examResult) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    if (examResult.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    if (examResult[0].creator_id !== userId) {
+      return res.status(403).send('You are not authorized to schedule the closure of this exam.');
+    }
+
+    // حساب وقت الإغلاق بالنمط الصحيح ل cron
+    const futureDate = new Date(new Date().getTime() + minutes * 60 * 1000);
+    const cronTime = `${futureDate.getUTCMinutes()} ${futureDate.getUTCHours()} ${futureDate.getUTCDate()} ${futureDate.getUTCMonth() + 1} *`;
+
+    // جدولة قفل الامتحان باستخدام node-cron
+    cron.schedule(cronTime, () => {
+      const sqlCloseExam = 'UPDATE exams SET is_open = 0 WHERE id = ?';
+      db.query(sqlCloseExam, [examId], (err, result) => {
+        if (err) {
+          console.error(`Failed to close exam with ID ${examId}:`, err);
+        } else {
+          console.log(`Exam with ID ${examId} has been closed.`);
+        }
+      });
+    }, {
+      scheduled: true,
+      timezone: "UTC"
+    });
+
+    res.status(200).send(`Exam with ID ${examId} is scheduled to close in ${minutes} minutes.`);
   });
 };
