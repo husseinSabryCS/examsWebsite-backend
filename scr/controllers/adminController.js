@@ -31,9 +31,9 @@ exports.addExam = (req, res) => {
         });
       });
     });
-    res.status(200).send('Exam and questions added successfully');
+    res.status(200).send('Exam and questions added successfully ,examId is'+ examId);
   });
-};
+};       
 
  
 exports.getStudentCorrectAnswersCount = (req, res) => {
