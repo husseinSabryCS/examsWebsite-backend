@@ -31,7 +31,7 @@ exports.addExam = (req, res) => {
         });
       });
     });
-    res.status(200).send('Exam and questions added successfully ,examId is'+ examId);
+    res.status(200).send('Exam and questions added successfully ,exam code is'+ examId);
   });
 };       
 
