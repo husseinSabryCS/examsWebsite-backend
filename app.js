@@ -1,10 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const db = require('./src/models/db'); 
-const adminRoutes = require('./src/routes/adminRoutes');
-const studentRoutes = require('./src/routes/studentRoutes');
-const authRoutes = require('./src/routes/authRoutes');
+const db = require('./scr/models/db'); 
+const adminRoutes = require('./scr/routes/adminRoutes');
+const studentRoutes = require('./scr/routes/studentRoutes');
+const authRoutes = require('./scr/routes/authRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 

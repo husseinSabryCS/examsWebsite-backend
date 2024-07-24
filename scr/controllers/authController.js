@@ -31,7 +31,7 @@ exports.login = (req, res) => {
 
 // التسجيل
 exports.register = (req, res) => {
-  const { email, password } = req.body;
+  const {name, email, password } = req.body;
   const sqlCheckEmail = 'SELECT * FROM users WHERE email = ?';
   db.query(sqlCheckEmail, [email], async (err, results) => {
     if (err) {
@@ -42,8 +42,8 @@ exports.register = (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = uuidv4();
-    const sqlInsertUser = 'INSERT INTO users (id, email, password) VALUES (?, ?, ?)';
-    db.query(sqlInsertUser, [userId, email, hashedPassword], (err) => {
+    const sqlInsertUser = 'INSERT INTO users (id,name, email, password) VALUES (?, ?, ?)';
+    db.query(sqlInsertUser, [userId,name, email, hashedPassword], (err) => {
       if (err) {
         return res.status(500).send(err);
       }
