@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 // استخدام cors
 app.use(cors());
 
-app.use(bodyParser.json());
+app.use(bodyParser.json());  
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);

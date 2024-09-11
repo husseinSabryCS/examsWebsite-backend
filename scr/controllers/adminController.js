@@ -87,31 +87,42 @@ exports.deleteExam = (req, res) => {
       return res.status(403).send('You are not authorized to delete this exam.');
     }
 
-    // حذف الإجابات، الأسئلة، وأخيراً الامتحان
-    const sqlDeleteAnswers = 'DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE exam_id = ?)';
-    db.query(sqlDeleteAnswers, [examId], (err) => {
+    // حذف الإجابات من جدول student_answers التي تشير إلى امتحان معين
+    const sqlDeleteStudentAnswers = 'DELETE FROM student_answers WHERE answer_id IN (SELECT id FROM answers WHERE question_id IN (SELECT id FROM questions WHERE exam_id = ?))';
+    db.query(sqlDeleteStudentAnswers, [examId], (err) => {
       if (err) {
         return res.status(500).send(err);
       }
 
-      const sqlDeleteQuestions = 'DELETE FROM questions WHERE exam_id = ?';
-      db.query(sqlDeleteQuestions, [examId], (err) => {
+      // حذف الإجابات
+      const sqlDeleteAnswers = 'DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE exam_id = ?)';
+      db.query(sqlDeleteAnswers, [examId], (err) => {
         if (err) {
           return res.status(500).send(err);
         }
 
-        const sqlDeleteExam = 'DELETE FROM exams WHERE id = ?';
-        db.query(sqlDeleteExam, [examId], (err) => {
+        // حذف الأسئلة
+        const sqlDeleteQuestions = 'DELETE FROM questions WHERE exam_id = ?';
+        db.query(sqlDeleteQuestions, [examId], (err) => {
           if (err) {
             return res.status(500).send(err);
           }
 
-          res.status(200).send('Exam deleted successfully.');
+          // حذف الامتحان
+          const sqlDeleteExam = 'DELETE FROM exams WHERE id = ?';
+          db.query(sqlDeleteExam, [examId], (err) => {
+            if (err) {
+              return res.status(500).send(err);
+            }
+
+            res.status(200).send('Exam deleted successfully.');
+          });
         });
       });
     });
   });
 };
+
 
 exports.getExamResults = (req, res) => {
   const { examId } = req.params;
