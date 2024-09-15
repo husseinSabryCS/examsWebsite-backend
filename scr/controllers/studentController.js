@@ -5,24 +5,37 @@ const { v4: uuidv4 } = require('uuid');
 exports.getQuestions = (req, res) => {
   const { examId } = req.params;
 
-  // Check if the exam is open
+  // تحقق من صحة المعرف examId إذا كان UUID
+  if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(examId)) {
+    return res.status(400).send('كود الامتحان غير صحيح.');
+  }
+
+  // تحقق إذا كان الامتحان مفتوح
   const sqlCheckExam = 'SELECT is_open FROM exams WHERE id = ?';
   db.query(sqlCheckExam, [examId], (err, result) => {
     if (err) {
-      return res.status(500).send(err);
+      console.error('Database query error:', err);
+      return res.status(500).send('Internal server error.');
     }
 
-    // If the exam is closed, return a message
+    // إذا لم يكن هناك سجل مطابق، أرسل رسالة بأن الامتحان غير موجود
+    if (result.length === 0) {
+      return res.status(404).send('Exam not found.');
+    }
+
+    // إذا كان الامتحان مغلقًا، أرسل رسالة بأن الامتحان مغلق
     if (!result[0].is_open) {
       return res.status(400).send('The exam has ended. You cannot view questions.');
     }
 
-    // If the exam is open, proceed to retrieve questions
+    // إذا كان الامتحان مفتوح، تابع للحصول على الأسئلة
     const sql = 'SELECT q.id as question_id, q.question_text, a.id as answer_id, a.answer_text FROM questions q LEFT JOIN answers a ON q.id = a.question_id WHERE q.exam_id = ?';
     db.query(sql, [examId], (err, results) => {
       if (err) {
-        return res.status(500).send(err);
+        console.error('Database query error:', err);
+        return res.status(500).send('Internal server error.');
       }
+      
       const questions = results.reduce((acc, row) => {
         const question = acc.find(q => q.question_id === row.question_id);
         if (question) {
@@ -32,10 +45,12 @@ exports.getQuestions = (req, res) => {
         }
         return acc;
       }, []);
+      
       res.status(200).json(questions);
     });
   });
 };
+
 
 exports.submitAnswer = (req, res) => {
   const { examId, studentId, answers } = req.body;
@@ -101,7 +116,7 @@ exports.submitAnswer = (req, res) => {
       .then(successMessages => {
         res.status(200).json({ message: 'Answers submitted successfully', details: successMessages });
       })
-      .catch(error => {
+      .catch(error => { 
         res.status(400).send(error);
       });
   });

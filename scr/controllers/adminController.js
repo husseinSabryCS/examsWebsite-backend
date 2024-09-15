@@ -142,7 +142,7 @@ exports.getExamResults = (req, res) => {
     if (examResult.length === 0) {
       return res.status(404).send('Exam not found.');
     }
-
+    
     if (examResult[0].creator_id !== userId) {
       return res.status(403).send('You are not authorized to access this exam.');
     }
