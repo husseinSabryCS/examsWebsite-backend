@@ -42,7 +42,7 @@ exports.register = (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = uuidv4();
-    const sqlInsertUser = 'INSERT INTO users (id,name, email, password) VALUES (?, ?, ?)';
+    const sqlInsertUser = 'INSERT INTO users (id,name, email, password) VALUES (?, ?, ?,?)';
     db.query(sqlInsertUser, [userId,name, email, hashedPassword], (err) => {
       if (err) {
         return res.status(500).send(err);

@@ -8,7 +8,7 @@ const authRoutes = require('./scr/routes/authRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// استخدام cors
+// استخدام cors   
 app.use(cors());
 
 app.use(bodyParser.json());  
