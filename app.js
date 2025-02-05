@@ -8,9 +8,12 @@ const authRoutes = require('./scr/routes/authRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// استخدام cors   
-app.use(cors());
 
+app.use(cors({
+  origin: 'https://webexams.vercel.app/', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());  
 
 app.use('/api/admin', adminRoutes);
